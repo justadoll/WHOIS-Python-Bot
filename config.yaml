@@ -1,0 +1,2 @@
+token: "XXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXX"
+messages: ["Привет, этот бот был создан для автоматического скана IP адресов с помощью WHOIS.\nДля отображения подробностей нажмите /help.","Отправьте пулл адресов\nДля отмены нажмите /cancel\n(Если не знаете что и как - нажмите /help)","Пример использования бота:\nПишем интересующий IP, к примеру\n192.124.249.5\n\nПолучаем ответ:\nIP: 192.124.249.5\nCity: None\nState: California\nCountry: USA\nDomain name: SUCURI.NET\nEmail: abuse@godaddy.com\nAddress: None\n\n#To-do: принимать пулл айпишек"]

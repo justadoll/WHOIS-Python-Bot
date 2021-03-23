@@ -7,12 +7,14 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from loguru import logger
+from random import randint
+import pyexcel
 import re
 import yaml
 import whois
+import time
+from to_excel import make_xl
 logger.add("info.json", format="{time} {level} {message}", level="INFO", rotation="5 MB", compression="zip", serialize=True)
-
-#hz = ["domain_name","emails","address"]
 
 with open("config.yaml") as f:
     yamldata = yaml.load(f,Loader=yaml.FullLoader)
@@ -52,14 +54,6 @@ def check_type(data):
         return False
 
 
-def check_ip(ip):
-    r = re.findall("\d+\.\d+\.\d+\.\d+",ip)
-    if r != []:
-        return r[0]
-    else:
-        return False
-
-
 bot = Bot(token=yamldata['token'])
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
@@ -94,15 +88,15 @@ async def proccess_whois(message: types.Message):
 async def process_set_ip(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['addr'] = message.text
-        if check_ip(data['addr']) == False:
-            await message.reply(yamldata['messages'][3])
-        else:
-            tmpaddr = whois.whois(data['addr'])
-            try:
-                await message.reply(parse_wis(tmpaddr,data['addr']))
-            except Exception as e:
-                await message.reply("OOPS...\nSomething gone wrong")
-            await state.finish()
+        ip_list = data['addr'].split('\n')
+        uid = message['from']['username']
+        dict_result = make_xl(ip_list,uid)
+        ri = str(randint(0,1000))
+        uname = uid+"_"+time.strftime('%Y-%m-%d', time.localtime(int(time.time())))+f'({ri})'+".xls"
+        pyexcel.save_as(records=dict_result,dest_file_name='files/'+uname)
+        with open('files/'+uname,"rb") as f:
+            await bot.send_document(message.chat.id,f)
+        await state.finish()
 
 
 if __name__ == "__main__":

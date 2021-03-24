@@ -91,6 +91,7 @@ async def process_set_ip(message: types.Message, state: FSMContext):
         ip_list = data['addr'].split('\n')
         uid = message['from']['username']
         dict_result = make_xl(ip_list,uid)
+        print(dict_result)
         ri = str(randint(0,1000))
         uname = uid+"_"+time.strftime('%Y-%m-%d', time.localtime(int(time.time())))+f'({ri})'+".xls"
         pyexcel.save_as(records=dict_result,dest_file_name='files/'+uname)

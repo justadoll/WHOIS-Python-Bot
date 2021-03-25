@@ -28,6 +28,13 @@ def get_org(ipfo):
     except AttributeError:
         return "Not found"
 
+def get_host(ipfo):
+    try:
+        return ipfo.hostname
+    except AttributeError:
+        return "Not found"
+
+
 class Curwhois(StatesGroup):
     addr = State()
 
@@ -104,6 +111,7 @@ async def process_set_ip(message: types.Message, state: FSMContext):
             logger.info(str(message.chat.id)+":"+str(ip))
             try:
                 tmp = handler.getDetails(ip)
+                msg_res += "Hostname: "+get_host(tmp)+"\n"
                 msg_res += "Organization: "+get_org(tmp)+"\n"
                 msg_res += "IP:"+tmp.ip+"\nCity: "+ tmp.city+"\nCountry:"+tmp.country+"\nRegion: "+tmp.region+"\n\n"
             except requests.exceptions.HTTPError:

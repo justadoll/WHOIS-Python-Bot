@@ -8,55 +8,37 @@ from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from loguru import logger
 from random import randint
+import ipinfo
+import pprint
 import pyexcel
 import re
 import yaml
-import whois
+import requests
 import time
-from to_excel import make_xl
+
 logger.add("info.json", format="{time} {level} {message}", level="INFO", rotation="5 MB", compression="zip", serialize=True)
 
 with open("config.yaml") as f:
     yamldata = yaml.load(f,Loader=yaml.FullLoader)
 
 
+def get_org(ipfo):
+    try:
+        return ipfo.org
+    except AttributeError:
+        return "Not found"
+
 class Curwhois(StatesGroup):
     addr = State()
 
-def parse_wis(data,ip):
-    res_str = ""
-    res_str += "IP: "+ ip + '\n'
-    res_str += "City: "+ str(data.city) + '\n'
-    res_str += "State: "+str(data.state) + '\n'
-    res_str += "Country: "+str(data.country) + '\n'
-    if check_type(data.domain_name) == True:
-        for i in data.domain_name:
-            res_str += "Domain name: "+ i + '\n'
-    else:
-        res_str += "Domain name: "+ str(data.domain_name) + '\n'
-    if check_type(data.emails) == True:
-        for i in data.emails:
-            res_str += "Email: "+ i + '\n'
-    else:
-        res_str += "Email: "+ str(data.emails) + '\n'
-    if check_type(data.address) == True:
-        for i in data.adderss:
-            res_str += "Address: "+ i + '\n'
-    else:
-        res_str += "Address: "+str(data.address) + '\n'
-    return res_str
 
-
-def check_type(data):
-    if type(data) == list:
-        return True
-    else:
-        return False
-
-
+class Single_whois(StatesGroup):
+    addr = State()
 bot = Bot(token=yamldata['token'])
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+ipinf_api = yamldata['config_api']
+handler = ipinfo.getHandler(ipinf_api)
 
 @dp.message_handler(state='*', commands='cancel')
 @dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
@@ -90,14 +72,47 @@ async def process_set_ip(message: types.Message, state: FSMContext):
         data['addr'] = message.text
         ip_list = data['addr'].split('\n')
         uid = message['from']['username']
-        dict_result = make_xl(ip_list,uid)
         ri = str(randint(0,1000))
         uname = uid+"_"+time.strftime('%Y-%m-%d', time.localtime(int(time.time())))+f'({ri})'+".xls"
-        logger.info(uname)
-        pyexcel.save_as(records=dict_result,dest_file_name='files/'+uname)
+        arr = []
+        logger.info(uname+'\n'+str(message.chat.id))
+        for ip in ip_list:
+            try:
+                ipres = handler.getDetails(ip).all
+                arr.append(ipres)
+            except requests.exceptions.HTTPError:
+                await message.reply('\''+ip+'\''+'\n'+yamldata['messages'][3])
+                logger.error(f"{message.chat.id}:{ip}")
+        pyexcel.save_as(records=arr,dest_file_name="files/"+uname)
         with open('files/'+uname,"rb") as f:
             await bot.send_document(message.chat.id,f)
         await state.finish()
+
+
+@dp.message_handler(commands=['get_provider'])
+async def proccess_whois(message: types.Message):
+    await Single_whois.addr.set()
+    await message.reply(yamldata['messages'][4])
+
+@dp.message_handler(state=Single_whois.addr)
+async def process_set_ip(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['addr'] = message.text
+        msg_res = ""
+        ip_list = data['addr'].split('\n')
+        #logger.info()
+        for ip in ip_list:
+            try:
+                tmp = handler.getDetails(ip)
+                msg_res += "Organization: "+get_org(tmp)+"\n"
+                msg_res += "IP:"+tmp.ip+"\nCity: "+ tmp.city+"\nCountry:"+tmp.country+"\nRegion: "+tmp.region+"\n\n"
+            except requests.exceptions.HTTPError:
+                await message.reply("Invalid ip: "+ ip)
+
+        await message.reply(msg_res)
+        await state.finish()
+
+
 
 
 if __name__ == "__main__":

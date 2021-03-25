@@ -5,7 +5,7 @@ import yaml
 with open("config.yaml") as f:
     yamldata = yaml.load(f,Loader=yaml.FullLoader)
 
-bot = Bot(token="XXXXXXXXXXXXX:XXXXXXXXXXX")
+bot = Bot(token=yamldata['zag_token'])
 dp = Dispatcher(bot)
 
 @dp.message_handler()

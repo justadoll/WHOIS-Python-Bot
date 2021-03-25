@@ -107,7 +107,7 @@ async def process_set_ip(message: types.Message, state: FSMContext):
                 msg_res += "Organization: "+get_org(tmp)+"\n"
                 msg_res += "IP:"+tmp.ip+"\nCity: "+ tmp.city+"\nCountry:"+tmp.country+"\nRegion: "+tmp.region+"\n\n"
             except requests.exceptions.HTTPError:
-                logger.error(message.chat.id+":"+ip)
+                logger.error(str(message.chat.id)+":"+str(ip))
                 await message.reply("Invalid ip: "+ ip)
 
         await message.reply(msg_res)

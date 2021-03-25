@@ -91,9 +91,9 @@ async def process_set_ip(message: types.Message, state: FSMContext):
         ip_list = data['addr'].split('\n')
         uid = message['from']['username']
         dict_result = make_xl(ip_list,uid)
-        print(dict_result)
         ri = str(randint(0,1000))
         uname = uid+"_"+time.strftime('%Y-%m-%d', time.localtime(int(time.time())))+f'({ri})'+".xls"
+        logger.info(uname)
         pyexcel.save_as(records=dict_result,dest_file_name='files/'+uname)
         with open('files/'+uname,"rb") as f:
             await bot.send_document(message.chat.id,f)

@@ -11,12 +11,10 @@ def check_ip(ip):
     else:
         return True
 
-#mb make IP args None?
 def make_xl(data,uid):
     result_dict = []
     for i in range(len(data)):
         if check_ip(data[i]) == False:
-            print("FASLE I ==",i)
             result_dict.append({"IP":data[i]})
             result_dict[i]["City"] = None
             result_dict[i]["Country"] = None
@@ -33,7 +31,6 @@ def make_xl(data,uid):
             result_dict[i]["Address1"] = None
             result_dict[i]["Address2"] = None
         else:
-            print("ELSE I ==",i)
             result_dict.append({"IP":data[i]})
             tmp_addr = whois.whois(data[i])
             result_dict[i]["City"] = tmp_addr.city

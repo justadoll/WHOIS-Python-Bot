@@ -6,6 +6,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.utils.exceptions import MessageIsTooLong
 from loguru import logger
 from random import randint
 from pymemcache.client import base
@@ -18,7 +19,6 @@ import requests
 import time
 import asyncio
 
-client = base.Client(('localhost', 11211))
 
 
 logger.add("info.json", format="{time} {level} {message}", level="INFO", rotation="5 MB", compression="zip", serialize=True)
@@ -26,6 +26,7 @@ logger.add("info.json", format="{time} {level} {message}", level="INFO", rotatio
 with open("config.yaml") as f:
     yamldata = yaml.load(f,Loader=yaml.FullLoader)
 
+client = base.Client((yamldata['memcached_ip'], yamldata['memcached_port']))
 
 def get_org(ipfo):
     try:
@@ -178,19 +179,13 @@ async def process_set_ip(message: types.Message, state: FSMContext):
                     whoid = message.chat.id
                     logger.error(f"{whoid}:{e}")
 
-            await message.reply(msg_res)
-            await state.finish()
-
-@dp.message_handler(commands=['test'])
-async def test_prcc(message: types.Message):
-    await bot.send_message(message.chat.id, "Testing!")
-    user = str(message.chat.id)
-    print("str(messageID):",user)
-    print('type:',type(user))
-    client.set(user, "bot_test", 30)
-    await asyncio.sleep(1)
-    testget = client.get(str(message.chat.id))
-    logger.debug(testget)
+            try:
+                await message.reply(msg_res)
+                await state.finish()
+            except MessageIsTooLong:
+                await message.reply("Слишком много айпи в одном сообщении!\nДавай по очереди...")
+            else:
+                await state.finish()
 
 if __name__ == "__main__":
     executor.start_polling(dp,skip_updates=True)
